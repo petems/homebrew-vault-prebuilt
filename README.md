@@ -10,7 +10,7 @@
 
 The Vault team don't use GitHug tags for their releases.
 
-> Please do note for the future though that even if you see a tag on the GitHub page, that tag may float until we arrive on a final build. So a tag is indicative that a release is coming up, but not necessarily indicative of the final commit/packages. - @jefferai
+> Please do note for the future though that even if you see a tag on the GitHub page, that tag may float until we arrive on a final build. So a tag is indicative that a release is coming up, but not necessarily indicative of the final commit/packages. - @jefferai in https://github.com/hashicorp/vault/issues/1051
 
 So, the Brew formula isn't really supported by HashiCorp.
 
