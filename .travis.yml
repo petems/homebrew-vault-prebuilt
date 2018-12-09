@@ -58,10 +58,8 @@ install:
 # multi-line commands that should fail when one of the commands fails.
 script:
   - |
-    if [[ $TRAVIS_EVENT_TYPE =~ cron|api|pull_request ]]; then
-      brew install ./Formula/*.rb && brew test ./Formula/*.rb && brew linkage --test ./Formula/*.rb || exit 123
-    fi
-  - ls *.bottle*.* || echo "==> No bottle created here"
+    brew install ./Formula/Vault.rb && brew test ./Formula/Vault.rb && brew linkage --test ./Formula/Vault.rb
+  - echo $TRAVIS_EVENT_TYPE
 
 jobs:
   include:
