@@ -32,7 +32,7 @@ env:
     ###### Github configuration ######
     # This config allows test-bot to push tags (eg. pr-1234) and DSL commits.
     # They will be pushed to github.com/$GITHUB_USER/homebrew-%TAP%.
-    - GITHUB_USER=touist
+    - GITHUB_USER=petems
     # GITHUB_TOKEN                   # (Secret) For pushing bottle DSL commits
 
 # (1) remember to use 'brew cleanup -s' at the end of the travis script;
@@ -85,11 +85,7 @@ install:
 # multi-line commands that should fail when one of the commands fails.
 script:
   - |
-    if [[ $TRAVIS_EVENT_TYPE =~ cron|api ]]; then
-      brew install *.rb && brew test *.rb && brew linkage --test *.rb || exit 123
-    fi
-  - if [[ $TRAVIS_EVENT_TYPE =~ pull_request ]]; then brew test-bot --root-url=$TAP_BOTTLE_ROOT_URL; fi
-  - ls *.bottle*.* || echo "==> No bottle created here"
+    brew install *.rb && brew test *.rb && brew linkage --test *.rb || exit 123
 
 jobs:
   include:
