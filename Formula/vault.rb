@@ -1,11 +1,11 @@
 class Vault < Formula
-  VAULT_VERSION = "0.11.5".freeze
+  VAULT_VERSION = "1.0.0".freeze
 
   desc "Installs Vault from pre-built binaries"
   homepage "https://vaultproject.io/downloads.html"
   url "https://releases.hashicorp.com/vault/#{VAULT_VERSION}/vault_#{VAULT_VERSION}_darwin_amd64.zip"
   version VAULT_VERSION
-  sha256 "58630a89ed1657814fcd1e00226db83479e10b0019b118d125a78b02a7d15ac5"
+  sha256 '1bb19dbfd96751d3b8e644dee592891167db5b2e0998d047c7365db312cd337c'
 
   def install
     bin.install 'vault'
