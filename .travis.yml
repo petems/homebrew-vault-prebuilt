@@ -11,29 +11,11 @@
 #   is pushed as a tag, e.g., 'pr-1234', which us unrelated to master.
 
 language: ruby
-if: tag IS blank AND NOT type IN (push)
 env:
   global:
     - HOMEBREW_LOGS=/tmp # Prevent ~/.cache/Homebrew/Logs from being rebuilt
     - HOMEBREW_NO_AUTO_UPDATE=yes # Prevents redundant auto-updates from brew
 
-    ###### Bintray configuration ######
-    - TAP_BOTTLE_ORG=touist                # Used in this script only
-    - TAP_BOTTLE_ROOT_URL=https://dl.bintray.com/$TAP_BOTTLE_ORG/bottles-touist
-    - HOMEBREW_BINTRAY_USER=maelvalais
-    # HOMEBREW_BINTRAY_KEY                 # Secret variable set in Travis CI
-
-    ###### AWS S3 configuration ######
-    - AWS_REGION=eu-west-1                 # aws-sdk-s3 gem errors without it
-    - BUCKET=homebrew-touist-travis
-    # AWS_ACCESS_KEY_ID                    # Secret variable set in Travis CI
-    # AWS_SECRET_ACCESS_KEY                # Secret variable set in Travis CI
-
-    ###### Github configuration ######
-    # This config allows test-bot to push tags (eg. pr-1234) and DSL commits.
-    # They will be pushed to github.com/$GITHUB_USER/homebrew-%TAP%.
-    - GITHUB_USER=petems
-    # GITHUB_TOKEN                   # (Secret) For pushing bottle DSL commits
 
 # (1) remember to use 'brew cleanup -s' at the end of the travis script;
 # otherwise, the $HOME/Library/Caches/Homebrew folder will be enormous
@@ -57,15 +39,6 @@ install:
   # Often, Travis CI image's git is too old for brew
   - brew install git
   # Install the ruby AWS gem so that I can upload bottles to S3
-  - rvm default do gem install aws-sdk-s3
-  # IMPORTANT STEP: link the tap inside brew to our current travis-cloned tap
-  # Step: 1) create the intermediate folders <user>/<repo> so that
-  # we can 2) remove <repo> and 3) replace it with a sym link
-  # that will point to the travis build folder.
-  # If we don't do that, the tap be cloned using the default master
-  # branch, and thus we cannot test our tap at the current pushed commit.
-  # We also need to unshallow in 4) because sometimes travis does not
-  # clone thouroughly but we need a deep clone.
   - mkdir -p $(brew --repo $TRAVIS_REPO_SLUG)   # 1)
   - rm -rf $(brew --repo $TRAVIS_REPO_SLUG)     # 2)
   - ln -s $PWD $(brew --repo $TRAVIS_REPO_SLUG) # 3)
@@ -85,7 +58,10 @@ install:
 # multi-line commands that should fail when one of the commands fails.
 script:
   - |
-    brew install *.rb && brew test *.rb && brew linkage --test *.rb || exit 123
+    if [[ $TRAVIS_EVENT_TYPE =~ cron|api|pull_request ]]; then
+      brew install ./Formula/*.rb && brew test ./Formula/*.rb && brew linkage --test ./Formula/*.rb || exit 123
+    fi
+  - ls *.bottle*.* || echo "==> No bottle created here"
 
 jobs:
   include:
@@ -95,7 +71,7 @@ jobs:
       env: OS=high_sierra-10.13
       # We must use 'rvm: system' because the system ruby doesn't rely on
       # Homebrew, which allows us to reinstall Homebrew without having a
-      # damaged ruby. We need ruby because we use the 'aws-sdk-s3' gem.
+      # damaged ruby.
       rvm: system
       before_install: # IMPORTANT: HOMEBREW_DEVELOPER must not be set here.
         # First we uninstall any outdated versions of xquartz; otherwise,
@@ -134,22 +110,3 @@ jobs:
       os: osx
       osx_image: xcode9.2
       env: OS=sierra-10.12
-
-after_script:
-  # In case the AWS_SECRET_ACCESS_KEY and AWS_SECRET_ACCESS_KEY are not
-  # available, we don't want the build to fail.
-  # Here, the 'testing' jobs have finished and must upload their *.{json,tar.gz}
-  - |
-    rvm default do ruby <<EOF || true
-    require 'aws-sdk-s3'; s3 = Aws::S3::Resource.new
-    Dir["*.{json,tar.gz}"].each { |f| s3.bucket("$BUCKET").put_object(key:"$TRAVIS_BUILD_NUMBER/#{f}").upload_file(f) }
-
-before_cache:
-  # Scrub cache so that travis only caches stuff for installed formulae.
-  - brew cleanup -s
-  - brew cask cleanup
-  # Remove temporary stuff (idk why they put that in ~/.cache... that should be in /tmp)
-  - rm -f ~/Library/Caches/Homebrew/linkage.db ~/.cache/Homebrew/linkage.db
-  # List the formulae so that I understand why the cache is huge sometimes
-  - brew list
-  - du -h ~/Library/Caches/Homebrew || du -h ~/.cache/Homebrew/linkage.db
