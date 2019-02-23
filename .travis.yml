@@ -1,29 +1,12 @@
 # Inspired from the .travis.yml in
 # https://github.com/davidchall/homebrew-hep/
 
-# This script can be executed in three different modes:
-# - cron/api (api is when you select 'trigger build' in travis): in this mode,
-#   all the formulas are tested to make sure that there is no shared lib
-#   breakage
-# - push to master: does nothing
-# - pull-request: in this mode, the updated formulas are built and bottled
-#   and the bottles are pushed to bintray as 'unpublished'. The DSL commit
-#   is pushed as a tag, e.g., 'pr-1234', which us unrelated to master.
-
 language: ruby
 env:
   global:
     - HOMEBREW_LOGS=/tmp # Prevent ~/.cache/Homebrew/Logs from being rebuilt
     - HOMEBREW_NO_AUTO_UPDATE=yes # Prevents redundant auto-updates from brew
 
-
-# (1) remember to use 'brew cleanup -s' at the end of the travis script;
-# otherwise, the $HOME/Library/Caches/Homebrew folder will be enormous
-# (~2GB for the 4 jobs). This is because this folder is already present on
-# osx images and it is big.
-# (2) For a time, I had removed $HOME/.cache/Homebrew (cache of Linuxbrew)
-# because it was also storing some logs in $HOME/.cache/Homebrew/Logs, making
-# the cache rebuilt every time.
 cache:
   directories:
     - "$HOME/.cache/pip"
@@ -32,30 +15,15 @@ cache:
     - "$HOME/.cache/Homebrew"         # (2)
 
 install:
-  # the official test-bot won't let you run inside TravisCI, so we use
-  # davidchall's one. David's test-bot cannot push the commit using
-  # Oauth github + https (only ssh) so I use my own.
   - brew tap maelvalais/test-bot
-  # Often, Travis CI image's git is too old for brew
   - brew install git
-  # Install the ruby AWS gem so that I can upload bottles to S3
   - mkdir -p $(brew --repo $TRAVIS_REPO_SLUG)   # 1)
   - rm -rf $(brew --repo $TRAVIS_REPO_SLUG)     # 2)
   - ln -s $PWD $(brew --repo $TRAVIS_REPO_SLUG) # 3)
   - git fetch --unshallow || true               # 4)
-  # Unless I am in 'brew test-bot', I don't want to fail on warnings.
-  # perl regex: needed so that I can use 1.4.0-beta1 or 1.4.0-rc1 as stable versions
   - perl -pi -e 's/(.*)problem(.*version.*should not contain.*)$/$1opoo$2/' $(brew --repo)/Library/Homebrew/dev-cmd/audit.rb
   - git -C $(brew --repo) commit -a -m "disable error on beta or alpha version"
 
-# WARNING: I discovered that 'set -e' is breaking Travis CI. I was using for
-# stopping a multiple-lines command as soon as one of the commands fails.
-# After having 'set -e', internal travis commands may stop working, e.g.:
-#   /Users/travis/.travis/job_stages: line 57: shell_session_update: command not found
-# is an internal error that shouldn't stop the script for continuing, but
-# because of 'set -e', the whole internal Travis CI script stops.
-# Conclusion: avoid using 'set -e' and more generally avoid for-loops and
-# multi-line commands that should fail when one of the commands fails.
 script:
   - |
     brew install ./Formula/Vault.rb && brew test ./Formula/Vault.rb && brew linkage --test ./Formula/Vault.rb
@@ -67,44 +35,13 @@ jobs:
       os: osx
       osx_image: xcode9.4
       env: OS=high_sierra-10.13
-      # We must use 'rvm: system' because the system ruby doesn't rely on
-      # Homebrew, which allows us to reinstall Homebrew without having a
-      # damaged ruby.
       rvm: system
-      before_install: # IMPORTANT: HOMEBREW_DEVELOPER must not be set here.
-        # First we uninstall any outdated versions of xquartz; otherwise,
-        # Homebrew will complain of of older version (2.9.7) being outdated
-        # even though we install a new version. Remember that
-        # /usr/local/Caskroom will also be deleted below.
+      before_install:
         - brew cask outdated xquartz || brew cask uninstall xquartz
-        # Three reasons not to use the /usr/local and Homebrew installations
-        # that come in the Travis CI images:
-        # 1) because Travis CI has installed many non-homebrew things into
-        #    /usr/local that randomly cause 'brew doctor' to fail;
-        # 2) after time, the osx image contains an outdated Homebrew that
-        #    has weird 'unlinked kegs' and such;
-        # 3) also because it takes a long time to 'brew update' from an old
-        #    Homebrew anyway, so why not start fresh.
         - mkdir ~/usr_local && sudo mv /usr/local/* ~/usr_local
         - /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
-
-        # Either xquartz was already installed at its latest version or it has
-        # been uninstalled. First, we put the cask back in place if it has not
-        # been uninstalled.
         - |
           if [ -d ~/usr_local/Caskroom/xquartz ];
           then sudo mv ~/usr_local/Caskroom /usr/local/Caskroom;
           else travis_retry brew cask install xquartz --no-quarantine; fi
-        # We still need the Homebrew ruby on macOS 10.12 and 10.11 because the
-        # system ruby uses an old openssl version ("tlsv1 alert protocol").
         - travis_retry brew install libyaml gmp openssl@1.1 openssl
-    # TO BE ENABLED AS SOON AS TRAVIS HAS A MOJAVE IMAGE:
-    #- <<: *run-osx
-    #  os: osx
-    #  osx_image: xcode9.4
-    #  env: OS=high_sierra-10.13
-
-    - <<: *run-osx
-      os: osx
-      osx_image: xcode9.2
-      env: OS=sierra-10.12
