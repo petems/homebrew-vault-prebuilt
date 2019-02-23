@@ -37,8 +37,9 @@ install:
   # Oauth github + https (only ssh) so I use my own.
   - brew tap maelvalais/test-bot
   # Often, Travis CI image's git is too old for brew
+  - brew update
   - brew install git
-  # Install the ruby AWS gem so that I can upload bottles to S3
+  - brew install openssl
   - mkdir -p $(brew --repo $TRAVIS_REPO_SLUG)   # 1)
   - rm -rf $(brew --repo $TRAVIS_REPO_SLUG)     # 2)
   - ln -s $PWD $(brew --repo $TRAVIS_REPO_SLUG) # 3)
