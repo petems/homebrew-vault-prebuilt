@@ -17,6 +17,7 @@ class Vault < Formula
     sleep 1
     ENV.append "VAULT_ADDR", "http://127.0.0.1:8200"
     system bin/"vault", "status"
+    assert_match "Vault v#{VAULT_VERSION}", shell_output("#{bin}/vault --version")
     Process.kill("TERM", pid)
   end
 end
