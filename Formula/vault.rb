@@ -1,6 +1,6 @@
 class Vault < Formula
-  VAULT_VERSION = "1.3.1".freeze
-  VAULT_SHA256  = "23abadfcda33d5dffa238284c68061d6938aaaa11324301c042fe8d00b83fa7f".freeze
+  VAULT_VERSION = "1.5.0".freeze
+  VAULT_SHA256  = "12f76f032d6192cc16ea79205c09c7a97635228d92f34568c5938ce1e1514877".freeze
 
   desc "Installs Vault from pre-built binaries"
   homepage "https://vaultproject.io/downloads.html"
