@@ -9,15 +9,7 @@ class Vault < Formula
   sha256 VAULT_SHA256
 
   def install
-    bin.install 'vault'
+    fail "homebrew-vault-prebuilt is no longer needed - use the official tap: brew tap hashicorp/tap"
   end
-
-  test do
-    pid = fork { exec bin/"vault", "server", "-dev" }
-    sleep 1
-    ENV.append "VAULT_ADDR", "http://127.0.0.1:8200"
-    system bin/"vault", "status"
-    assert_match "Vault v#{VAULT_VERSION}", shell_output("#{bin}/vault --version")
-    Process.kill("TERM", pid)
-  end
+  
 end
